@@ -13,6 +13,7 @@ async fn main() -> Result<(), sqs::Error> {
             Arg::new("source")
                 .short('s')
                 .long("source")
+                .required(true)
                 .value_name("url")
                 .about("The SQS source url")
                 .takes_value(true),
@@ -21,61 +22,54 @@ async fn main() -> Result<(), sqs::Error> {
             Arg::new("dest")
                 .short('d')
                 .long("dest")
+                .required(true)
                 .value_name("url")
                 .about("The SQS desintation url")
                 .takes_value(true),
         )
         .arg(
-            Arg::new("output")
-                .about("Sets an optional output file")
-                .index(1),
+            Arg::new("region")
+                .short('r')
+                .long("region")
+                .value_name("region")
+                .about("the region")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::new("num-messages")
+                .short('n')
+                .long("num-messages")
+                .value_name("url")
+                .about("the maximum number of messages to replay")
+                .takes_value(true),
         )
         .get_matches();
 
-    // You can check the value provided by positional arguments, or option arguments
-    let source = match matches.value_of("source") {
-        Some(o) => o,
-        None => "",
+    let source = matches.value_of("source").map(|r| r.to_owned()).unwrap();
+    let dest = matches.value_of("dest").map(|r| r.to_owned()).unwrap();
+    let region = matches.value_of("region").map(|r| r.to_owned());
+
+    let r_max_message = matches
+        .value_of("max_number_messages")
+        .unwrap_or("1")
+        .parse::<i32>();
+    let max_num_messages = match r_max_message {
+        Ok(o) => Some(o),
+        Err(error) => panic!("Can't parse --num-messages: {}", error),
     };
 
-    let dest = match matches.value_of("dest") {
-        Some(o) => o,
-        None => "",
-    };
-    println!("{}", source);
 
-    let player = sqsr::SqsReplayer();
-
+    let player = sqsr::SqsReplayer::new().await?;
     player
         .replay(sqsr::ReplayOpts {
-            source: source.to_owned(),
-            dest: dest.to_owned(),
+            region,
+            source,
+            dest,
+            max_num_messages,
         })
         .await?;
 
     println!("{:?}", matches);
- 
+
     Ok(())
 }
-
-   // // You can see how many times a particular flag or argument occurred
-    // // Note, only flags can have multiple occurrences
-    // match matches.occurrences_of("debug") {
-    //     0 => println!("Debug mode is off"),
-    //     1 => println!("Debug mode is kind of on"),
-    //     2 => println!("Debug mode is on"),
-    //     _ => println!("Don't be crazy"),
-    // }
-
-    // // You can check for the existence of subcommands, and if found use their
-    // // matches just as you would the top level app
-    // if let Some(matches) = matches.subcommand_matches("test") {
-    //     // "$ myapp test" was run
-    //     if matches.is_present("list") {
-    //         // "$ myapp test -l" was run
-    //         println!("Printing testing lists...");
-    //     } else {
-    //         println!("Not printing testing lists...");
-    //     }
-    // }
-
