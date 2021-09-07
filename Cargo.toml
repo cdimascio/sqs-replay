@@ -1,9 +1,15 @@
 [package]
-name = "sqs-replay-cli"
+name = "sqs-replay"
 version = "0.1.0"
+authors = ["Carmine DiMascio <cdimascio@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A tool to replay SQS messages"
+readme = "README.md"
+homepage = "https://github.com/cdimascio/sqs-replay"
+repository ="https://github.com/cdimascio/sqs-replay"
+keywords = ["cli", "sqs", "replay", "dlq"]
+categories = ["command-line-utilities"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 clap = { version ="3.0.0-beta.4", features=["yaml"] }
@@ -13,3 +19,5 @@ aws-config = { package = "aws-config", git = "https://github.com/awslabs/aws-sdk
 tracing-subscriber = "0.2.18"
 async-trait = "0.1.51"
 futures = "0.3"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

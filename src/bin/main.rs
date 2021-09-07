@@ -1,5 +1,5 @@
 use clap::{load_yaml, App};
-use sqs_replay_cli::sqsr::{self, Replayer};
+use sqs_replay::sqsr::{self, Replayer};
 
 #[tokio::main]
 async fn main() -> Result<(), sqs::Error> {

@@ -6,7 +6,6 @@ type Callback = fn(String);
 
 struct RecvOpts {
     source: String,
-    // max_num_messages: Option<i32>,
 }
 
 struct SendOpts {

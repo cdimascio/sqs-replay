@@ -4,5 +4,11 @@
 
 ```shell
 cargo build
-cargo run -- -s https://host/MyDLQueue -d https://host/MyQueue 
+cargo run -- --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2
+```
+
+## Package
+
+```shell
+cargo build --release
 ```
