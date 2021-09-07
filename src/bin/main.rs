@@ -1,75 +1,57 @@
-use clap::{App, Arg};
+use clap::{load_yaml, App};
 use sqs_replay_cli::sqsr::{self, Replayer};
 
 #[tokio::main]
 async fn main() -> Result<(), sqs::Error> {
-    tracing_subscriber::fmt::init();
-    let matches = App::new("sqs-replay-cli")
-        .version("1.0")
-        .author("Carmine DiMascio. <cdimascio@gmail.com>")
-        .about("Replay SQS messages")
-        .license("MIT")
-        .arg(
-            Arg::new("source")
-                .short('s')
-                .long("source")
-                .required(true)
-                .value_name("url")
-                .about("The SQS source url")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("dest")
-                .short('d')
-                .long("dest")
-                .required(true)
-                .value_name("url")
-                .about("The SQS desintation url")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("region")
-                .short('r')
-                .long("region")
-                .value_name("region")
-                .about("the region")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("num-messages")
-                .short('n')
-                .long("num-messages")
-                .value_name("url")
-                .about("the maximum number of messages to replay")
-                .takes_value(true),
-        )
-        .get_matches();
-
-    let source = matches.value_of("source").map(|r| r.to_owned()).unwrap();
-    let dest = matches.value_of("dest").map(|r| r.to_owned()).unwrap();
-    let region = matches.value_of("region").map(|r| r.to_owned());
-
-    let r_max_message = matches
-        .value_of("max_number_messages")
-        .unwrap_or("1")
-        .parse::<i32>();
-    let max_num_messages = match r_max_message {
-        Ok(o) => Some(o),
-        Err(error) => panic!("Can't parse --num-messages: {}", error),
-    };
-
-
-    let player = sqsr::SqsReplayer::new().await?;
-    player
+    let args = parse_args();
+    let player = sqsr::SqsReplayer::new(sqsr::SqsReplayerOpts {
+        region: args.region,
+    })
+    .await?;
+    let callback = |m: String| println!("processed {}", m);
+    let r = player
         .replay(sqsr::ReplayOpts {
-            region,
-            source,
-            dest,
-            max_num_messages,
+            source: args.source,
+            dest: args.dest,
+            max_num_messages: args.max_num_messages,
+            callback,
         })
-        .await?;
+        .await;
 
-    println!("{:?}", matches);
+    match r {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            eprintln!("{}", e);
+            Ok(())
+        }
+    }
+}
 
-    Ok(())
+struct CliArgs {
+    source: String,
+    dest: String,
+    region: Option<String>,
+    max_num_messages: Option<i32>,
+}
+
+fn parse_args() -> CliArgs {
+    let yaml = load_yaml!("cli.yaml");
+    let matches = App::from(yaml).get_matches();
+    let source = matches.value_of("source").map(|r| r.to_string()).unwrap();
+    let dest = matches.value_of("dest").map(|r| r.to_string()).unwrap();
+    let region = matches.value_of("region").map(|r| r.to_string());
+    let r_max_message = matches.value_of("max-messages").map(|m| m.parse::<i32>());
+    let max_num_messages = match r_max_message {
+        Some(r) => match r {
+            Ok(o) => Some(o),
+            Err(error) => panic!("Can't parse --num-messages: {}", error),
+        },
+        None => None,
+    };
+    CliArgs {
+        region,
+        source,
+        dest,
+        max_num_messages,
+    }
 }
