@@ -1,12 +1,14 @@
 use clap::{load_yaml, App};
-use sqs_replay::replay;
 use sqs::model::Message;
-use sqs_replay::replay::Replayer;
+use sqs_replay::replay;
+use sqs_replay::replay::ISqsReplay;
+use std::io::{self, Write};
+use colored::*;
 
 #[tokio::main]
 async fn main() -> Result<(), sqs::Error> {
     let args = parse_args();
-    let player = replay::SqsReplayer::new(replay::SqsReplayerOpts {
+    let player = replay::SqsReplay::new(replay::SqsReplayOptions {
         region: args.region,
         source: args.source,
         dest: args.dest,
@@ -21,13 +23,14 @@ async fn main() -> Result<(), sqs::Error> {
                 None => println!("{{}}"),
             }
         } else {
-            print!(".");
+            print!("{}", ".".green());
+            io::stdout().flush().unwrap();
         }
     };
     let r = player
         .replay(
             replay::ReplayOpts {
-                max_num_messages: args.max_num_messages,
+                max_messages: args.max_num_messages,
             },
             visitor,
         )
@@ -36,7 +39,7 @@ async fn main() -> Result<(), sqs::Error> {
     match r {
         Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{}", e.to_string().red());
             Ok(())
         }
     }

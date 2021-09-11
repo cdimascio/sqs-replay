@@ -1,4 +1,5 @@
-name: yaml_app
+name: sqs-replay
+bin_name: sqs-replay
 version: "0.9.0"
 about: SQS Message Replay
 author: Carmine DiMascio. <cdimascio@gmail.com>
@@ -28,7 +29,7 @@ args:
           value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
           takes_value: true
     - verbose:
-          about: Enable verbose mode
+          about: Outputs the contents of each SQS message replayed
           short: v
           long: verbose
     - max-messages:
