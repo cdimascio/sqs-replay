@@ -4,32 +4,36 @@ about: SQS Message Replay
 author: Carmine DiMascio. <cdimascio@gmail.com>
 
 settings:
-  - ArgRequiredElseHelp
+    - ArgRequiredElseHelp
 
 args:
-  - region:
-      about: The AWS region
-      short: r
-      long: region
-      value_name: us-west-2
-      takes_value: true
-  - source:
-      about: The source SQS url
-      short: s
-      long: source
-      required: true
-      value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
-      takes_value: true
-  - dest:
-      about: The destination SQS url
-      short: d
-      long: dest
-      required: true
-      value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
-      takes_value: true
-  - max-messages:
-      about: The maximum number of messages to replay
-      short: m
-      long: max-messages
-      value_name: "1"
-      takes_value: true
+    - region:
+          about: The AWS region
+          short: r
+          long: region
+          value_name: us-west-2
+          takes_value: true
+    - source:
+          about: The source SQS url
+          short: s
+          long: source
+          required: true
+          value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
+          takes_value: true
+    - dest:
+          about: The destination SQS url
+          short: d
+          long: dest
+          required: true
+          value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
+          takes_value: true
+    - verbose:
+          about: Enable verbose mode
+          short: v
+          long: verbose
+    - max-messages:
+          about: The maximum number of messages to replay
+          short: m
+          long: max-messages
+          value_name: "1"
+          takes_value: true
