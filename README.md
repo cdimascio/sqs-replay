@@ -1,5 +1,13 @@
 # sqs-replay
 
+## Install
+
+MacOS
+
+```shell
+brew install cdimascio/tap/sqs_replay
+```
+
 ## Usage
 
 ```shell
@@ -37,3 +45,6 @@ cargo run -- --source https://host/MyDLQueue --dest https://host/MyQueue -max-me
 ```shell
 cargo build --release
 ```
+
+## License 
+MIT
