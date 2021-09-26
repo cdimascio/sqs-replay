@@ -19,6 +19,12 @@ brew install cdimascio/tap/sqs_replay
 ## Usage
 
 ```shell
+sqs-replay --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2 --verbose
+```
+
+## Options
+
+```shell
 USAGE:
     sqs-replay [FLAGS] [OPTIONS] --source <https://sqs-<region>.amazonaws.com/<account>/<quene-name>> --dest <https://sqs-<region>.amazonaws.com/<account>/<quene-name>>
 
@@ -41,11 +47,6 @@ OPTIONS:
             The source SQS url
 ```
 
-## Example
-
-```shell
-sqs-replay --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2 --verbose
-```
 
 ## License 
 MIT
