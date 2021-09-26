@@ -1,9 +1,12 @@
-# sqs-replay
-[![](https://img.shields.io/badge/install-homebrew-yellow)](#) [![](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
+<p align="center">
+    <img src="https://img.shields.io/badge/install-homebrew-yellow"/>
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg"/>
+</p>
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/cdimascio/sqs-replay/main/assets/sqs-replay-logo.png"/>
+    <img src="https://raw.githubusercontent.com/cdimascio/sqs-replay/main/assets/sqs-replay-logo.png"/>
 </p>
+
 
 ## Install
 
