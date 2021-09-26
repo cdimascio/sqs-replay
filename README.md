@@ -19,8 +19,14 @@ brew install cdimascio/tap/sqs_replay
 ## Usage
 
 ```shell
-sqs-replay --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2 --verbose
+sqs-replay \
+  --source https://host/MyDLQueue \
+  --dest https://host/MyQueue \
+  --max-messages 10 \
+  --verbose
 ```
+
+Note: exlude `max-messages` to replay all
 
 ## Options
 
