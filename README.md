@@ -44,11 +44,5 @@ OPTIONS:
 sqs-replay --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2 --verbose
 ```
 
-## Package
-
-```shell
-cargo build --release
-```
-
 ## License 
 MIT
