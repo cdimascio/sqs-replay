@@ -1,5 +1,8 @@
 # sqs-replay
 
+<p align="center">
+<img src="https://raw.githubusercontent.com/cdimascio/sqs-replay/main/assets/sqs-replay-logo.png"/>
+</p>
 ## Install
 
 MacOS
