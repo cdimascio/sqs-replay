@@ -17,7 +17,7 @@ brew install cdimascio/tap/sqs_replay
 
 ```shell
 USAGE:
-    main [FLAGS] [OPTIONS] --source <https://sqs-<region>.amazonaws.com/<account>/<quene-name>> --dest <https://sqs-<region>.amazonaws.com/<account>/<quene-name>>
+    sqs-replay [FLAGS] [OPTIONS] --source <https://sqs-<region>.amazonaws.com/<account>/<quene-name>> --dest <https://sqs-<region>.amazonaws.com/<account>/<quene-name>>
 
 FLAGS:
     -h, --help       Print help information
@@ -38,11 +38,10 @@ OPTIONS:
             The source SQS url
 ```
 
-## Develop
+## Example
 
 ```shell
-cargo build
-cargo run -- --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2 --verbose
+sqs-replay --source https://host/MyDLQueue --dest https://host/MyQueue -max-messages 2 --verbose
 ```
 
 ## Package
