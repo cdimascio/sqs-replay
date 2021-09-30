@@ -26,7 +26,7 @@ sqs-replay \
   --verbose
 ```
 
-Note: exlude `max-messages` to replay all
+Note: exclude `max-messages` to replay all
 
 ## Options
 
