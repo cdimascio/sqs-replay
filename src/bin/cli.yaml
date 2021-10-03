@@ -38,3 +38,9 @@ args:
           long: max-messages
           value_name: "1"
           takes_value: true
+    - selector-regex:
+            about: Dedup selector. A regex that MUST contain a single capture group which captures the 'deduplication key'.
+            short: x
+            long: selector-regex
+            value_name: 'userId":"(.*?)"'
+            takes_value: true

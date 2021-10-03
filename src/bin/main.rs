@@ -1,12 +1,13 @@
 use clap::{load_yaml, App};
+use colored::*;
 use sqs::model::Message;
+use sqs_replay::error::ReplayError;
 use sqs_replay::replay;
 use sqs_replay::replay::ISqsReplay;
 use std::io::{self, Write};
-use colored::*;
 
 #[tokio::main]
-async fn main() -> Result<(), sqs::Error> {
+async fn main() -> Result<(), ReplayError> {
     let args = parse_args();
     let player = replay::SqsReplay::new(replay::SqsReplayOptions {
         region: args.region,
@@ -31,6 +32,7 @@ async fn main() -> Result<(), sqs::Error> {
         .replay(
             replay::ReplayOpts {
                 max_messages: args.max_num_messages,
+                selector: args.selector_regex,
             },
             visitor,
         )
@@ -52,6 +54,7 @@ struct CliArgs {
     region: Option<String>,
     verbose: bool,
     max_num_messages: Option<i32>,
+    selector_regex: Option<String>,
 }
 
 fn parse_args() -> CliArgs {
@@ -60,6 +63,9 @@ fn parse_args() -> CliArgs {
     let source = matches.value_of("source").map(|r| r.to_string()).unwrap();
     let dest = matches.value_of("dest").map(|r| r.to_string()).unwrap();
     let verbose = matches.is_present("verbose");
+    let selector_regex = matches
+        .value_of("selector-regex")
+        .map(|r| r.to_string());
     let region = matches.value_of("region").map(|r| r.to_string());
     let r_max_message = matches.value_of("max-messages").map(|m| m.parse::<i32>());
     let max_num_messages = match r_max_message {
@@ -75,5 +81,6 @@ fn parse_args() -> CliArgs {
         dest,
         verbose,
         max_num_messages,
+        selector_regex,
     }
 }
