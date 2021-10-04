@@ -14,6 +14,7 @@ pub(crate) struct MessageFilter {
     seen: HashSet<String>,
     re: Option<Regex>,
     pub results: Vec<Message>,
+    pub skipped: Vec<Message>,
     pub stats: MessageFilterStats,
 }
 
@@ -22,6 +23,7 @@ impl MessageFilter {
         MessageFilter {
             seen: HashSet::new(),
             results: Vec::new(),
+            skipped: Vec::new(),
             re,
             stats: MessageFilterStats {
                 total: 0,
@@ -47,6 +49,7 @@ impl MessageFilter {
                         self.stats.total += 1;
                         self.results.push(m);
                     } else {
+                        self.skipped.push(m);
                         self.stats.deduped += 1;
                     }
                 }
@@ -59,6 +62,7 @@ impl MessageFilter {
     }
 
     pub fn clear(&mut self) {
+        self.skipped.clear();
         self.results.clear();
     }
 }

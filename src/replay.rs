@@ -65,6 +65,7 @@ impl ISqsReplay for SqsReplay {
             let messages = self.receive_messages(batch).await;
             mf.add(messages);
             self.send_messages(&mf.results, &cb).await?;
+            self.delete_messages(&mf.skipped).await?;
         }
 
         if max > batches * batch {
@@ -73,6 +74,7 @@ impl ISqsReplay for SqsReplay {
             let messages = self.receive_messages(batch).await;
             mf.add(messages);
             self.send_messages(&mf.results, &cb).await?;
+            self.delete_messages(&mf.skipped).await?
         }
 
         println!();
@@ -160,7 +162,23 @@ impl SqsReplay {
         Ok(())
     }
 
-    // async fn delete_messages(&self, )
+    async fn delete_messages(&self, messages: &Vec<Message>) -> Result<()> {
+        let mut ds = Vec::new();
+        let empty = &String::from("");
+        for m in messages {
+            let handle = m.receipt_handle.as_ref().unwrap_or(empty);
+            ds.push(self
+                .client
+                .delete_message()
+                .receipt_handle(handle)
+                .queue_url(&self.source)
+                .send());
+        }
+        // TODO handle delete error
+        join_all(ds).await;
+
+        Ok(())
+    }
 
     async fn receive_messages(&self, batch: i32) -> Vec<Message> {
         //Vec<Result<Vec<Message>>> {
