@@ -65,9 +65,9 @@ OPTIONS:
 
 ## Dedup Messages
 
-sqs-replay can deduplicate messages. To avoid replaying logically similar messages, sqs-replay accepts a `dedup-regex`. 
-The `dedup-regex` must contain a single capture group that selects the message's deduplication identifier.
-Subsequent messages that contain the same deduplication identifier will be deleted, but not replayed.
+sqs-replay can deduplicate messages. To avoid replaying logically similar messages, sqs-replay provides the `--dedup-regex` argument. 
+The values of `--dedup-regex` is a regex that (must) contain a single capture group that selects the message's deduplication identifier.
+Subsequent messages that contain the same deduplication identifier will be deleted, but not replayed. `--dedup-regex` can be used with standard and FIFO queues.
 
 ```shell
 sqs-replay \ 
