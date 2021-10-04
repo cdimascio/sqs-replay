@@ -26,6 +26,8 @@ sqs-replay \
   --verbose
 ```
 
+Note: exclude `max-messages` to replay all
+
 ## Options
 
 ```shell
@@ -104,4 +106,4 @@ For example, if the following message were in the queue:
 The `--deup-regex` will replay message 1 and 2, and delete 3.
 
 ## License 
-MIT
+[MIT](LICENSE)
