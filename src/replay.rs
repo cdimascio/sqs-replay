@@ -35,6 +35,8 @@ pub struct SqsReplay {
     dest: String,
 }
 
+const BATCH_SIZE: i32 = 100;
+
 #[async_trait]
 impl ISqsReplay for SqsReplay {
     async fn replay<F>(&self, opts: ReplayOpts, cb: F) -> Result<()>
@@ -49,16 +51,15 @@ impl ISqsReplay for SqsReplay {
             return Ok(());
         }
 
-        let batch = cmp::max(cmp::min(max, 5), 1);
+        let batch = cmp::max(cmp::min(max, BATCH_SIZE), 1);
         let batches = max / batch;
         let mut mf = MessageFilter::new(re.clone());
 
-        // Do the first synchronously
-        // This will enable us to capture errors early without running a full batch
+        // Do the first synchronously (receive, send, delete)
+        // This enables capturing errors e.g. permission early without running a full batch
         let messages = self.receive_message().await?;
         mf.add(messages);
         self.send_messages(&mf.results, &cb).await?;
-
 
         for _ in 0..batches {
             mf.clear();
