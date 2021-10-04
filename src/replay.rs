@@ -1,11 +1,12 @@
 use crate::error::ReplayError;
+use crate::filter::MessageFilter;
 use async_trait::async_trait;
-use regex::Regex;
 use futures::future::join_all;
 use futures::FutureExt;
+use regex::Regex;
 use sqs::model::Message;
 use sqs::Region;
-use std::collections::HashSet;
+use std::cmp;
 
 type Result<T> = std::result::Result<T, ReplayError>;
 
@@ -40,23 +41,47 @@ impl ISqsReplay for SqsReplay {
     where
         F: Fn(&Message) + Sync + Send,
     {
-        let max = opts.max_messages.unwrap_or(-1);
-        let mut rfs = Vec::new();
-        let mut i = 0;
-        while max == -1 || i < max {
-            rfs.push(self.receive_message().boxed());
-            i = i + 1;
-        }
-        let rsv = join_all(rfs).await;
-        let rs = self.filter_messages(rsv, opts.selector);
+        let re = self.get_regex_selector(opts.selector)?;
 
-        match rs {
-            Ok(messages) => {
-                self.send_messages(messages, &cb).await?;
-                Ok(())
-            }
-            Err(e) => Err(e),
+        // minus one to account for first message (which doubles as a test)
+        let max = opts.max_messages.unwrap_or(i32::MAX) - 1;
+        if max < 0 {
+            return Ok(());
         }
+
+        let batch = cmp::max(cmp::min(max, 5), 1);
+        let batches = max / batch;
+        let mut mf = MessageFilter::new(re.clone());
+
+        // Do the first synchronously
+        // This will enable us to capture errors early without running a full batch
+        let messages = self.receive_message().await?;
+        mf.add(messages);
+        self.send_messages(&mf.results, &cb).await?;
+
+
+        for _ in 0..batches {
+            mf.clear();
+            let messages = self.receive_messages(batch).await;
+            mf.add(messages);
+            self.send_messages(&mf.results, &cb).await?;
+        }
+
+        if max > batches * batch {
+            mf.clear();
+            let batch = max - batches * batch;
+            let messages = self.receive_messages(batch).await;
+            mf.add(messages);
+            self.send_messages(&mf.results, &cb).await?;
+        }
+
+        println!();
+        println!(
+            r#"{{ "processed": {}, "deduped": {} }}"#,
+            mf.stats.total, mf.stats.deduped
+        );
+
+        Ok(())
     }
 }
 
@@ -95,7 +120,7 @@ impl SqsReplay {
 
         Ok(messages)
     }
-    async fn send_messages<F>(&self, messages: Vec<Message>, cb: F) -> Result<()>
+    async fn send_messages<F>(&self, messages: &Vec<Message>, cb: F) -> Result<()>
     where
         F: Fn(&Message),
     {
@@ -135,55 +160,40 @@ impl SqsReplay {
         Ok(())
     }
 
-    fn filter_messages(
-        &self,
-        results: Vec<Result<Vec<Message>>>,
-        selector: Option<String>,
-    ) -> Result<Vec<Message>> {
-        let mut seen = HashSet::new();
-        let empty = &String::from("");
-        if selector.is_some() {
-            // if selector is present, use key to proactively delete previously played messages
-            let mut filtered_messages = Vec::new();
-            let sel = selector.unwrap().clone();
-            let mut skipped_count = 0;
-            for rm in results {
-                match rm {
-                    Ok(messages) => {
-                        for m in messages {
-                            let body = m.body.as_ref().unwrap_or(empty);
-                            let re = Regex::new(sel.as_str()).unwrap();
-                            match re.captures(body) {
-                                Some(c) => {
-                                    let key = String::from(c.get(1).unwrap().as_str());
-                                    if !seen.contains(&key) {
-                                        seen.insert(key);
-                                        filtered_messages.push(m);
-                                    } else {
-                                        skipped_count += 1;
-                                    }
-                                },
-                                None => {}
-                            };
-                        }
-                    }
-                    Err(e) => println!("[error] {}", e),
-                }
+    // async fn delete_messages(&self, )
+
+    async fn receive_messages(&self, batch: i32) -> Vec<Message> {
+        //Vec<Result<Vec<Message>>> {
+        let mut rfs = Vec::new();
+        for _ in 0..batch {
+            rfs.push(self.receive_message().boxed());
+        }
+        let rvs = join_all(rfs).await;
+
+        let mut messages: Vec<Message> = Vec::new();
+        for rv in rvs {
+            if rv.is_ok() {
+                let ms = &mut rv.unwrap();
+                messages.append(ms);
             }
-            Ok(filtered_messages)
-        } else {
-            let mut filtered_messages = Vec::new();
-            for r in results {
-                match r {
-                    Ok(messages) => {
-                        for m in messages {
-                            filtered_messages.push(m)
-                        }
+            // TODO collect errors
+        }
+        messages
+    }
+
+    fn get_regex_selector(&self, selector: Option<String>) -> Result<Option<Regex>> {
+        match selector {
+            Some(sel) => match Regex::new(sel.as_str()) {
+                Ok(re) => {
+                    if re.captures_len() != 2 {
+                        Err(ReplayError::BadSelector)
+                    } else {
+                        Ok(Some(re))
                     }
-                    Err(e) => println!("[error] {}", e),
                 }
-            }
-            Ok(filtered_messages)
+                Err(..) => Err(ReplayError::BadSelector),
+            },
+            None => Ok(None),
         }
     }
 }

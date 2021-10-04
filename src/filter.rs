@@ -1,53 +1,65 @@
-use crate::error::ReplayError;
 use regex::Regex;
 use sqs::model::Message;
 use std::collections::HashSet;
 
+
+#[derive(Debug)]
+pub(crate) struct MessageFilterStats {
+    pub total: i32,
+    pub deduped: i32,
+}
+
+
 pub(crate) struct MessageFilter {
-    set: HashSet<String>,
+    seen: HashSet<String>,
+    re: Option<Regex>,
+    pub results: Vec<Message>,
+    pub stats: MessageFilterStats,
 }
 
 impl MessageFilter {
-    pub(crate) fn new() -> Self {
-        return MessageFilter {
-            set: HashSet::new(),
-        };
-    }
-    pub fn filter(
-        &mut self,
-        messages: Vec<Message>,
-        selector: Option<String>,
-    ) -> Result<Vec<Message>, ReplayError> {
-        if selector.is_none() {
-            return Ok(messages);
+    pub(crate) fn new(re: Option<Regex>) -> Self {
+        MessageFilter {
+            seen: HashSet::new(),
+            results: Vec::new(),
+            re,
+            stats: MessageFilterStats {
+                total: 0,
+                deduped: 0,
+            },
         }
-        let re = Regex::new(selector.unwrap().as_str()).unwrap();
-        if re.captures_len() != 2 {
-            return Err(ReplayError::BadSelector);
+    }
+
+    pub fn add(&mut self, mut messages: Vec<Message>) {
+        if self.re.is_none() {
+            self.results.append(&mut messages);
         }
 
         let empty = &String::from("");
-        let r = messages
-            .iter()
-            .filter(|m| {
-                let body = m.body.as_ref().unwrap_or(empty);
-                match re.captures(body) {
-                    Some(c) => {
-                        let key = String::from(c.get(1).unwrap().as_str());
-                        if !self.set.contains(&key) {
-                            self.set.insert(key);
-                            true
-                        } else {
-                            false
-                        }
+        let re = self.re.as_ref().unwrap();
+        for m in messages {
+            let body = m.body.as_ref().unwrap_or(empty);
+            match re.captures(body) {
+                Some(c) => {
+                    let key = String::from(c.get(1).unwrap().as_str());
+                    if !self.seen.contains(&key) {
+                        self.seen.insert(key);
+                        self.stats.total += 1;
+                        self.results.push(m);
+                    } else {
+                        self.stats.deduped += 1;
                     }
-                    None => true,
                 }
-            })
-            .cloned()
-            .collect();
-        println!("===>{:?}", r);
-        Ok(r)
+                None => {
+                    self.stats.total += 1;
+                    self.results.push(m);
+                },
+            }
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.results.clear();
     }
 }
 
@@ -55,19 +67,20 @@ impl MessageFilter {
 mod tests {
     use crate::filter::MessageFilter;
     use sqs::model::Message;
-    use std::collections::HashSet;
+    use regex::Regex;
 
     #[test]
-    fn it_works() {
+    fn filter_by_selector() {
         let m1 = Message::builder().body("a").build();
         let m2 = Message::builder().body("b").build();
         let m3 = Message::builder().body("test a").build();
         let m4 = Message::builder().body("test b").build();
-        let m4 = Message::builder().body("test c").build();
-        let messages = vec![m1, m2, m3, m4];
-        let mut mf = MessageFilter::new();
+        let m5 = Message::builder().body("test c").build();
+        let messages = vec![m1, m2, m3, m4, m5];
+        let re = Regex::new("(test)").unwrap();
+        let mut mf = MessageFilter::new(Some(re));
 
-        let filtered = mf.filter(messages, Option::Some(String::from("(test)")));
-        assert_eq!(filtered.unwrap().len(), 3);
+        mf.add(messages);
+        assert_eq!(mf.results.len(), 3);
     }
 }

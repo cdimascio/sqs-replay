@@ -10,9 +10,9 @@ pub enum ReplayError {
 
 impl fmt::Display for ReplayError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match *self {
-            ReplayError::BadSelector => write!(f, "replay error"),
-            ReplayError::Sqs(..) => write!(f, "sqs error"),
+        match self {
+            ReplayError::BadSelector => write!(f, "bad selector"),
+            ReplayError::Sqs(e) => write!(f, "{}", e),
         }
     }
 }
