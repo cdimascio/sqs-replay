@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 clap = { version ="3.0.0-beta.4", features=["yaml"] }
-colored = "2"
+termion = "*"
 sqs = { package = "aws-sdk-sqs", git = "https://github.com/awslabs/aws-sdk-rust" }
 tokio = { version = "1", features = ["full"] }
 aws-config = { package = "aws-config", git = "https://github.com/awslabs/aws-sdk-rust" }

@@ -1,5 +1,5 @@
 use clap::{load_yaml, App};
-use colored::*;
+use termion::{color};
 use sqs::model::Message;
 use sqs_replay::error::ReplayError;
 use sqs_replay::replay;
@@ -24,7 +24,7 @@ async fn main() -> Result<(), ReplayError> {
                 None => println!("{{}}"),
             }
         } else {
-            print!("{}", ".".green());
+            print!("{} {}", color::Fg(color::Green), ".");
             io::stdout().flush().unwrap();
         }
     };
@@ -41,7 +41,7 @@ async fn main() -> Result<(), ReplayError> {
     match r {
         Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("{}", e.to_string().red());
+            eprintln!(r#"{}{{ "error": "{}" }}"#, color::Fg(color::Red), e.to_string());
             Ok(())
         }
     }

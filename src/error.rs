@@ -4,14 +4,14 @@ use std::fmt::Formatter;
 
 #[derive(Debug)]
 pub enum ReplayError {
-    BadSelector,
+    BadSelector(String),
     Sqs(Box<dyn std::error::Error>),
 }
 
 impl fmt::Display for ReplayError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ReplayError::BadSelector => write!(f, "bad selector"),
+            ReplayError::BadSelector(m) => write!(f, "bad selector: {}", m),
             ReplayError::Sqs(e) => write!(f, "{}", e),
         }
     }

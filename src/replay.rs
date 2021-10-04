@@ -80,7 +80,7 @@ impl ISqsReplay for SqsReplay {
 
         println!();
         println!(
-            r#"{{ "processed": {}, "deduped": {} }}"#,
+            r#"{{ "replayed": {}, "deduped": {} }}"#,
             mf.stats.total, mf.stats.deduped
         );
 
@@ -168,12 +168,13 @@ impl SqsReplay {
         let empty = &String::from("");
         for m in messages {
             let handle = m.receipt_handle.as_ref().unwrap_or(empty);
-            ds.push(self
-                .client
-                .delete_message()
-                .receipt_handle(handle)
-                .queue_url(&self.source)
-                .send());
+            ds.push(
+                self.client
+                    .delete_message()
+                    .receipt_handle(handle)
+                    .queue_url(&self.source)
+                    .send(),
+            );
         }
         // TODO handle delete error
         join_all(ds).await;
@@ -182,7 +183,6 @@ impl SqsReplay {
     }
 
     async fn receive_messages(&self, batch: i32) -> Vec<Message> {
-        //Vec<Result<Vec<Message>>> {
         let mut rfs = Vec::new();
         for _ in 0..batch {
             rfs.push(self.receive_message().boxed());
@@ -205,12 +205,14 @@ impl SqsReplay {
             Some(sel) => match Regex::new(sel.as_str()) {
                 Ok(re) => {
                     if re.captures_len() != 2 {
-                        Err(ReplayError::BadSelector)
+                        Err(ReplayError::BadSelector(String::from(
+                            "regex must have one capture group.",
+                        )))
                     } else {
                         Ok(Some(re))
                     }
                 }
-                Err(..) => Err(ReplayError::BadSelector),
+                Err(e) => Err(ReplayError::BadSelector(e.to_string())),
             },
             None => Ok(None),
         }
