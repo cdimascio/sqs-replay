@@ -26,46 +26,53 @@ sqs-replay --source https://host/MyDLQueue --dest https://host/MyQueue -max-mess
 
 ```shell
 USAGE:
-    sqs-replay [FLAGS] [OPTIONS] --source <https://sqs-<region>.amazonaws.com/<account>/<quene-name>> --dest <https://sqs-<region>.amazonaws.com/<account>/<quene-name>>
+    sqs-replay [FLAGS] [OPTIONS] --source <https://sqs-region.amazonaws.com/account-id/quene-name> --dest <https://sqs-region.amazonaws.com/account-id/quene-name>
 
 FLAGS:
     -h, --help       Print help information
-    -v, --verbose    Outputs the contents of each SQS message replayed
+    -v, --verbose    Outputs the contents of each SQS message replayed.
     -V, --version    Print version information
 
 OPTIONS:
-    -d, --dest <https://sqs-<region>.amazonaws.com/<account>/<quene-name>>
-            The destination SQS url
+    -d, --dest <https://sqs-region.amazonaws.com/account-id/quene-name>
+            The destination SQS url.
 
-    -j, --selector-json <userId":"(.*?)">
-            Dedup selector. A regex that MUST contain a single capture group which captures the
-            'deduplication key'.
-
-    -m, --max-messages <1>
-            The maximum number of messages to replay
+    -m, --max-messages <10>
+            The maximum number of messages to replay.
 
     -r, --region <us-west-2>
             The AWS region
 
-    -s, --source <https://sqs-<region>.amazonaws.com/<account>/<quene-name>>
-            The source SQS url
+    -s, --source <https://sqs-region.amazonaws.com/account-id/quene-name>
+            The source SQS url.
+
+    -x, --dedup-regex <id":"(.*?)">
+            A regex applied to each message. The regex must contain a single capture group.
+            The value captured identifies the message. Messages identified by a previously seen
+            identifier will be deleted, but not replayed.
+            
+            Avoids replaying duplicate messages.
+            
+            e.g --selector-regex 'id":"(.*?)"'
 
 ```
 
 ## Dedup Messages
 
-sqs-replay will deduplicate messages. Provide a regex with a single capture group the selects a key to dedup by
+sqs-replay can deduplicate messages. To avoid replaying logically similar messages, sqs-replay accepts a `dedup-regex`. 
+The `dedup-regex` must contain a single capture group that selects the message's deduplication identifier.
+Subsequent messages that contain the same deduplication identifier will be deleted, but not replayed.
 
 ```shell
 sqs-replay \ 
-  --source https://host/MyDLQueue \ 
-  --dest https://host/MyQueue \ 
+  --source 'https://host/MyDLQueue' \ 
+  --dest 'https://host/MyQueue' \ 
   --max-messages 200 
+  --dedup-regex 'id":"(.*?)"'
   --verbose
-  --selector-regex 'id":"(.*?)"'
 ```
 
-The `selector-regex`, `userId":"(.*?)"` matches the value of `id` in a json structure. 
+The `deup-regex`, `id":"(.*?)"` matches the value of `id` in a json structure. 
 
 For example, if the following message were in the queue:
 
@@ -90,7 +97,7 @@ For example, if the following message were in the queue:
 }
 ```
 
-The `--selector-regex` will replay message 1 and 2, and delete 3.
+The `--deup-regex` will replay message 1 and 2, and delete 3.
 
 ## License 
 MIT

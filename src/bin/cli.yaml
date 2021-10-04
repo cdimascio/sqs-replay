@@ -40,7 +40,7 @@ args:
           long: max-messages
           value_name: "10"
           takes_value: true
-    - selector-regex:
+    - dedup-regex:
             about: |
               A regex applied to each message. The regex must contain a single capture group.
               The value captured identifies the message. Messages identified by a previously seen identifier will be deleted, but not replayed.
@@ -49,6 +49,6 @@ args:
 
               e.g --selector-regex 'id":"(.*?)"'
             short: x
-            long: selector-regex
+            long: dedup-regex
             value_name: id":"(.*?)"
             takes_value: true

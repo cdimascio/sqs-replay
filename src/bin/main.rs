@@ -32,7 +32,7 @@ async fn main() -> Result<(), ReplayError> {
         .replay(
             replay::ReplayOpts {
                 max_messages: args.max_num_messages,
-                selector: args.selector_regex,
+                selector: args.dedup_regex,
             },
             visitor,
         )
@@ -54,7 +54,7 @@ struct CliArgs {
     region: Option<String>,
     verbose: bool,
     max_num_messages: Option<i32>,
-    selector_regex: Option<String>,
+    dedup_regex: Option<String>,
 }
 
 fn parse_args() -> CliArgs {
@@ -63,8 +63,8 @@ fn parse_args() -> CliArgs {
     let source = matches.value_of("source").map(|r| r.to_string()).unwrap();
     let dest = matches.value_of("dest").map(|r| r.to_string()).unwrap();
     let verbose = matches.is_present("verbose");
-    let selector_regex = matches
-        .value_of("selector-regex")
+    let dedup_regex = matches
+        .value_of("dedup-regex")
         .map(|r| r.to_string());
     let region = matches.value_of("region").map(|r| r.to_string());
     let r_max_message = matches.value_of("max-messages").map(|m| m.parse::<i32>());
@@ -81,6 +81,6 @@ fn parse_args() -> CliArgs {
         dest,
         verbose,
         max_num_messages,
-        selector_regex,
+        dedup_regex,
     }
 }
