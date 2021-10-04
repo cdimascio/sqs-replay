@@ -15,32 +15,40 @@ args:
           value_name: us-west-2
           takes_value: true
     - source:
-          about: The source SQS url
+          about: |
+            The source SQS url.
           short: s
           long: source
           required: true
-          value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
+          value_name: https://sqs-region.amazonaws.com/account-id/quene-name
           takes_value: true
     - dest:
-          about: The destination SQS url
+          about: |
+            The destination SQS url.
           short: d
           long: dest
           required: true
-          value_name: https://sqs-<region>.amazonaws.com/<account>/<quene-name>
+          value_name: https://sqs-region.amazonaws.com/account-id/quene-name
           takes_value: true
     - verbose:
-          about: Outputs the contents of each SQS message replayed
+          about: Outputs the contents of each SQS message replayed.
           short: v
           long: verbose
     - max-messages:
-          about: The maximum number of messages to replay
+          about: The maximum number of messages to replay.
           short: m
           long: max-messages
-          value_name: "1"
+          value_name: "10"
           takes_value: true
     - selector-regex:
-            about: Dedup selector. A regex that MUST contain a single capture group which captures the 'deduplication key'.
+            about: |
+              A regex applied to each message. The regex must contain a single capture group.
+              The value captured identifies the message. Messages identified by a previously seen identifier will be deleted, but not replayed.
+
+              Avoids replaying duplicate messages.
+
+              e.g --selector-regex 'id":"(.*?)"'
             short: x
             long: selector-regex
-            value_name: 'userId":"(.*?)"'
+            value_name: id":"(.*?)"
             takes_value: true
