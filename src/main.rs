@@ -1,10 +1,12 @@
 use clap::{load_yaml, App};
 use termion::{color};
 use sqs::model::Message;
-use sqs_replay::error::ReplayError;
-use sqs_replay::replay;
-use sqs_replay::replay::ISqsReplay;
 use std::io::{self, Write};
+use crate::core::error::ReplayError;
+use crate::core::replay;
+use crate::core::replay::ISqsReplay;
+
+mod core;
 
 #[tokio::main]
 async fn main() -> Result<(), ReplayError> {

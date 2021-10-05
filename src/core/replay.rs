@@ -1,38 +1,34 @@
-use crate::error::ReplayError;
-use crate::filter::MessageFilter;
+use crate::core::error::ReplayError;
+use crate::core::filter::MessageFilter;
+use crate::core::sqs::{Sqs, SqsOptions};
 use async_trait::async_trait;
-use futures::future::join_all;
-use futures::FutureExt;
 use regex::Regex;
 use sqs::model::Message;
-use sqs::Region;
 use std::cmp;
 
 type Result<T> = std::result::Result<T, ReplayError>;
 
 #[derive(Debug)]
-pub struct ReplayOpts {
+pub(crate) struct ReplayOpts {
     pub max_messages: Option<i32>,
     pub selector: Option<String>,
 }
 
 #[async_trait]
-pub trait ISqsReplay {
+pub(crate) trait ISqsReplay {
     async fn replay<F>(&self, opts: ReplayOpts, cb: F) -> Result<()>
     where
         F: Fn(&Message) + Sync + Send;
 }
 
-pub struct SqsReplayOptions {
+pub(crate) struct SqsReplayOptions {
     pub source: String,
     pub dest: String,
     pub region: Option<String>,
 }
 
-pub struct SqsReplay {
-    client: sqs::Client,
-    source: String,
-    dest: String,
+pub(crate) struct SqsReplay {
+    client: Sqs,
 }
 
 const BATCH_SIZE: i32 = 100;
@@ -90,114 +86,31 @@ impl ISqsReplay for SqsReplay {
 
 impl SqsReplay {
     pub async fn new(opts: SqsReplayOptions) -> Result<Self> {
-        let config = if let Some(region) = opts.region {
-            aws_config::from_env().region(Region::new(region))
-        } else {
-            aws_config::from_env()
-        }
-        .load()
-        .await;
-
-        Ok(SqsReplay {
-            client: sqs::Client::new(&config),
+        let client = Sqs::new(SqsOptions {
             source: opts.source,
             dest: opts.dest,
+            region: opts.region,
         })
+        .await?;
+        Ok(SqsReplay { client })
     }
     async fn receive_message(&self) -> Result<Vec<Message>> {
-        let result = self
-            .client
-            .receive_message()
-            .queue_url(&self.source)
-            .send()
-            .await;
-
-        if result.is_err() {
-            return Err(ReplayError::Sqs(Box::new(result.err().unwrap())));
-        }
-
-        let messages = match result.unwrap().messages {
-            Some(o) => o,
-            None => Vec::new(),
-        };
-
-        Ok(messages)
+        self.client.receive_message().await
     }
+
     async fn send_messages<F>(&self, messages: &Vec<Message>, cb: F) -> Result<()>
     where
         F: Fn(&Message),
     {
-        let mut ss = Vec::new();
-        let mut ds = Vec::new();
-        let empty = &String::from("");
-        for m in messages {
-            let body = m.body.as_ref().unwrap_or(empty);
-            let s = self
-                .client
-                .send_message()
-                .message_body(body)
-                .queue_url(&self.dest)
-                .send()
-                .await;
-
-            if s.is_err() {
-                return Err(ReplayError::Sqs(Box::new(s.err().unwrap())));
-            }
-            let handle = m.receipt_handle.as_ref().unwrap_or(empty);
-            let d = self
-                .client
-                .delete_message()
-                .receipt_handle(handle)
-                .queue_url(&self.source)
-                .send()
-                .await;
-
-            if d.is_err() {
-                return Err(ReplayError::Sqs(Box::new(d.err().unwrap())));
-            }
-            ds.push(d);
-            ss.push(s);
-            cb(&m);
-        }
-
-        Ok(())
+        self.client.send_messages(messages, cb).await
     }
 
     async fn delete_messages(&self, messages: &Vec<Message>) -> Result<()> {
-        let mut ds = Vec::new();
-        let empty = &String::from("");
-        for m in messages {
-            let handle = m.receipt_handle.as_ref().unwrap_or(empty);
-            ds.push(
-                self.client
-                    .delete_message()
-                    .receipt_handle(handle)
-                    .queue_url(&self.source)
-                    .send(),
-            );
-        }
-        // TODO handle delete error
-        join_all(ds).await;
-
-        Ok(())
+        self.client.delete_messages(messages).await
     }
 
     async fn receive_messages(&self, batch: i32) -> Vec<Message> {
-        let mut rfs = Vec::new();
-        for _ in 0..batch {
-            rfs.push(self.receive_message().boxed());
-        }
-        let rvs = join_all(rfs).await;
-
-        let mut messages: Vec<Message> = Vec::new();
-        for rv in rvs {
-            if rv.is_ok() {
-                let ms = &mut rv.unwrap();
-                messages.append(ms);
-            }
-            // TODO collect errors
-        }
-        messages
+        self.client.receive_messages(batch).await
     }
 
     fn get_regex_selector(&self, selector: Option<String>) -> Result<Option<Regex>> {

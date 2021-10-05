@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Formatter;
 
 #[derive(Debug)]
-pub enum ReplayError {
+pub(crate) enum ReplayError {
     BadSelector(String),
     Sqs(Box<dyn std::error::Error>),
 }

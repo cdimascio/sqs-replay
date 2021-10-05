@@ -69,7 +69,7 @@ impl MessageFilter {
 
 #[cfg(test)]
 mod tests {
-    use crate::filter::MessageFilter;
+    use crate::core::filter::MessageFilter;
     use sqs::model::Message;
     use regex::Regex;
 
