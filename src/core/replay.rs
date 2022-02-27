@@ -117,9 +117,9 @@ impl SqsReplay {
         match selector {
             Some(sel) => match Regex::new(sel.as_str()) {
                 Ok(re) => {
-                    if re.captures_len() != 2 {
+                    if re.captures_len() < 2 {
                         Err(ReplayError::BadSelector(String::from(
-                            "regex must have one capture group.",
+                            "regex must have at least one capture group.",
                         )))
                     } else {
                         Ok(Some(re))
@@ -129,5 +129,19 @@ impl SqsReplay {
             },
             None => Ok(None),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use regex::Regex;
+
+    #[test]
+    fn test_capture_group() {
+        // no capture group returns 1 capture group
+        let sel = String::from("test");
+        let r = Regex::new(sel.as_str());
+        let re = r.unwrap();
+        assert_eq!(re.captures_len(), 1);
     }
 }
