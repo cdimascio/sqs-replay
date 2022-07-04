@@ -42,8 +42,8 @@ args:
           takes_value: true
     - dedup-regex:
             about: |
-              A regex applied to each message. The regex must contain a single capture group.
-              The value captured identifies the message. Messages identified by a previously seen identifier will be deleted, but not replayed.
+              A regex applied to each message. The regex must contain at least one capture group.
+              The value captured by the 'last' capture group is used to uniquely identifty a message. If multiple messages have the same identifier, only the first match message is replayed; other messages are deleted.
 
               Avoids replaying duplicate messages.
 

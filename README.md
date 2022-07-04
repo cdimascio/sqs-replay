@@ -7,7 +7,6 @@
     <img src="https://raw.githubusercontent.com/cdimascio/sqs-replay/main/assets/sqs-replay-logo.png"/>
 </p>
 
-
 ## Install
 
 MacOS
@@ -53,32 +52,33 @@ OPTIONS:
             The source SQS url.
 
     -x, --dedup-regex <id":"(.*?)">
-            A regex applied to each message. The regex must contain a single capture group.
-            The value captured identifies the message. Messages identified by a previously seen
-            identifier will be deleted, but not replayed.
-            
+            A regex applied to each message. The regex must contain at least one capture group.
+            The value captured by the 'last' capture group is used to uniquely identifty a message.
+            If multiple messages have the same identifier, only the first match message is replayed;
+            other messages are deleted.
+
             Avoids replaying duplicate messages.
-            
+
             e.g --selector-regex 'id":"(.*?)"'
 
 ```
 
 ## Dedup Messages
 
-sqs-replay can deduplicate messages. To avoid replaying logically similar messages, sqs-replay provides the `--dedup-regex` argument. 
+sqs-replay can deduplicate messages. To avoid replaying logically similar messages, sqs-replay provides the `--dedup-regex` argument.
 The values of `--dedup-regex` is a regex that (must) contain a single capture group that selects the message's deduplication identifier.
 Subsequent messages that contain the same deduplication identifier will be deleted, but not replayed. `--dedup-regex` can be used with standard and FIFO queues.
 
 ```shell
-sqs-replay \ 
-  --source 'https://host/MyDLQueue' \ 
-  --dest 'https://host/MyQueue' \ 
-  --max-messages 200 
+sqs-replay \
+  --source 'https://host/MyDLQueue' \
+  --dest 'https://host/MyQueue' \
+  --max-messages 200
   --dedup-regex 'id":"(.*?)"'
   --verbose
 ```
 
-The `deup-regex`, `id":"(.*?)"` matches the value of `id` in a json structure. 
+The `deup-regex`, `id":"(.*?)"` matches the value of `id` in a json structure.
 
 For example, if the following message were in the queue:
 
@@ -105,5 +105,6 @@ For example, if the following message were in the queue:
 
 The `--deup-regex` will replay message 1 and 2, and delete 3.
 
-## License 
+## License
+
 [MIT](LICENSE)
